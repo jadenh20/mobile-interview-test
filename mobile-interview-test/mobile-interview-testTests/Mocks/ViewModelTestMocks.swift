@@ -131,7 +131,8 @@ enum Fixtures {
             city: "New York",
             state: "NY",
             name: "Hotel #\(id)",
-            desktop_img: "https://example.com/\(id).jpg"
+            desktop_img: "https://example.com/\(id).jpg",
+            products: []
         )
     }
 

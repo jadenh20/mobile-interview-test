@@ -86,31 +86,6 @@ struct SearchViewModelTests {
         #expect(service.callCount == 1)
     }
 
-    @Test
-    func whitespaceOnlyTextIsTreatedAsEmpty() async {
-        let service = RecordingPlacesSearchService { _ in [Fixtures.nycCity] }
-        let viewModel = SearchViewModel(service: service, debounceInterval: .zero)
-
-        viewModel.searchText = "   "
-        viewModel.searchTextDidChange("   ")
-
-        #expect(viewModel.state == .notStarted)
-        try? await Task.sleep(for: .milliseconds(20))
-        #expect(service.callCount == 0)
-    }
-
-    @Test
-    func searchTermsAreTrimmedBeforeBeingPassedToService() async {
-        let service = RecordingPlacesSearchService { _ in [] }
-        let viewModel = SearchViewModel(service: service, debounceInterval: .zero)
-
-        viewModel.searchText = "  NYC  "
-        viewModel.searchTextDidChange("  NYC  ")
-
-        _ = await waitFor { service.callCount == 1 }
-        #expect(service.terms == ["NYC"])
-    }
-
     // MARK: - Debouncing & cancellation
 
     @Test

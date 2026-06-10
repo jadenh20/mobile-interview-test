@@ -45,14 +45,14 @@ final class SearchViewModel {
     /// Called by the view whenever the text field's value changes.
     func searchTextDidChange(_ newValue: String) {
 //        let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        let encodedString = newValue.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-        guard let encodedString, !encodedString.isEmpty else {
+//        let encodedString = newValue.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+        guard !newValue.isEmpty else {
             currentSearchTask?.cancel()
             currentSearchTask = nil
             state = .notStarted
             return
         }
-        scheduleSearch(for: encodedString, debounced: true)
+        scheduleSearch(for: newValue, debounced: true)
     }
 
     /// Re-runs the most recent search without debouncing — used by the error
