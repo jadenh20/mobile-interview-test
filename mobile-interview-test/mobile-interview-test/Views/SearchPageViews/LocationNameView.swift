@@ -10,7 +10,7 @@ import SwiftUI
 struct LocationNameView: View {
     
     let locationData: LocationData
-    let boldTextLength: Int
+    let boldText: String
     
     public var body: some View {
         HStack {
@@ -24,15 +24,11 @@ struct LocationNameView: View {
     private var formattedLocationName: AttributedString {
         var attributed = AttributedString(locationData.name)
         
-        // This shouldn't ever happen
-        guard boldTextLength <= locationData.name.count else {
+        guard let boldRange = attributed.range(of: boldText) else {
             return attributed
         }
         
-        let start = attributed.characters.index(attributed.startIndex, offsetBy: 0)
-        let end = attributed.characters.index(attributed.startIndex, offsetBy: boldTextLength)
-        
-        attributed[start..<end].inlinePresentationIntent = .stronglyEmphasized
+        attributed[boldRange].inlinePresentationIntent = .stronglyEmphasized
         return attributed
     }
     
@@ -47,9 +43,9 @@ struct LocationNameView: View {
 }
 
 #Preview("City") {
-    LocationNameView(locationData: LocationData(id: 0, name: "Newport Beach, California", type: .city, latitude: 0.0, longitude: 0.0), boldTextLength: 3)
+    LocationNameView(locationData: LocationData(id: 0, name: "Newport Beach, California", type: .city, latitude: 0.0, longitude: 0.0), boldText: "New")
 }
 
 #Preview("Hotel") {
-    LocationNameView(locationData: LocationData(id: 0, name: "The Ritz-Carlton", type: .hotel, latitude: 0.0, longitude: 0.0), boldTextLength: 5)
+    LocationNameView(locationData: LocationData(id: 0, name: "The Ritz-Carlton", type: .hotel, latitude: 0.0, longitude: 0.0), boldText: "Ritz")
 }

@@ -105,7 +105,7 @@ struct SearchView: View {
                         )
                     )
                 } label: {
-                    LocationNameView(locationData: searchResult, boldTextLength: viewModel.searchText.count)
+                    LocationNameView(locationData: searchResult, boldText: viewModel.searchText)
                         .padding(.horizontal, 5)
                 }
                 .foregroundStyle(.black)
