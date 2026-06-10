@@ -117,7 +117,8 @@ private let previewHotels: [HotelData] = (1...6).map { i in
         city: "New York",
         state: "NY",
         name: "TWA Hotel #\(i)",
-        desktop_img: "https://assets-staging.resortpass.dev/uploads/image/picture/35445/TWA_pool7.jpg"
+        desktop_img: "https://assets-staging.resortpass.dev/uploads/image/picture/35445/TWA_pool7.jpg",
+        products: []
     )
 }
 

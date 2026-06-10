@@ -15,13 +15,14 @@ struct HotelData: Codable, Hashable {
     var state: String
     var name: String
     var desktop_img: String
+    var products: [ProductData]
 
     // The API returns the full state name under the key "state"; everything
     // else matches the property names directly.
     private enum CodingKeys: String, CodingKey {
-        case id, rating, reviews, name
+        case id, rating, reviews, name, desktop_img, products
         case city = "city_name"
         case state = "state_code"
-        case desktop_img
     }
 }
+

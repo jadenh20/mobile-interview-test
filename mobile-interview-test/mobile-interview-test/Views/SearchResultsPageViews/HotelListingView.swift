@@ -32,6 +32,8 @@ struct HotelListingView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
+            productView
+                .padding(.vertical, 10)
         }
         .padding(20)
     }
@@ -43,6 +45,43 @@ struct HotelListingView: View {
         }
         Text(String(format: "%.1f", hotel.rating))
         Text("(\(hotel.reviews))")
+    }
+    
+    @ViewBuilder
+    private var productView: some View {
+        VStack(alignment: .leading, spacing: 5.0) {
+            ForEach(hotel.products, id: \.self) { product in
+                HStack(alignment: .center) {
+                    Text(product.typeName)
+                        .font(.system(size: 15.0, weight: .bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                    ForEach(product.categories, id: \.self) { category in
+                        Text(category)
+                            .font(.system(size: 12.0))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                    }
+                    Divider()
+                        .frame(height: 16)
+                    
+                    Text("$\(String(format: "%.2f", product.price))")
+                        .font(.system(size: 15.0))
+                    
+                    Divider()
+                        .frame(height: 16)
+                    
+                    switch product.availability {
+                    case .available:
+                        Text("Available")
+                            .font(.system(size: 12.0))
+                    case .unavailable, .unknown:
+                        Text("Unavailable")
+                            .font(.system(size: 12.0))
+                    }
+                }
+            }
+        }
     }
     
     private func image(for number: Double) -> Image {
@@ -62,6 +101,20 @@ struct HotelListingView: View {
         city: "New York",
         state: "NY",
         name: "TWA Hotel",
-        desktop_img: "<https://assets-staging.resortpass.dev/uploads/image/picture/35445/TWA_pool7.jpg>"
+        desktop_img: "<https://assets-staging.resortpass.dev/uploads/image/picture/35445/TWA_pool7.jpg>",
+        products: [ProductData(
+            id: 1,
+            availability: ProductAvailability.available,
+            price: 25.0,
+            categories: ["Pool"],
+            typeName: "Day Pass"
+        ),
+       ProductData(
+           id: 2,
+           availability: ProductAvailability.available,
+           price: 75.0,
+           categories: ["Spa"],
+           typeName: "Spa Pass"
+       )]
     ))
 }

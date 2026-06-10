@@ -1,261 +1,53 @@
-# ResortPass Mobile Developer Interview Test
+# ResortPass iOS Interview — Implementation Notes
 
-## Delivery Method 🚚
+Two-screen native SwiftUI app: an autocomplete search of places, and a list of hotels for the selected place.
 
-Candidates should create a fork from the following repository: https://github.com/resortpass/mobile-interview-test. You'll then open one single pull request (PR) from your fork containing all the changes, including the initial project scaffolding and the implementation of the test.
+## Running it
 
-Candidates have 5 days from the day they receive the test to deliver it.
+Open `mobile-interview-test/mobile-interview-test.xcodeproj` in Xcode 16+ and run on any iOS 16+ simulator. No SPM resolution or setup steps required.
 
-Candidates should also write a README file on their fork with a brief explanation of how their architecture works and any other important aspects of the project.
+## Architecture
 
-Candidates have **5 days** from the day they receive the test to deliver it.
+Layered, with a one-way data flow from services → view models → views:
 
-Candidates should also write a **README** file on their fork with a brief explanation of how their architecture works and any other important aspects of the project.
-
-## The test
-
-Welcome to the technical evaluation for the Flutter Developer position at ResortPass. This test is designed to assess your practical skills and understanding of mobile application development principles using the Flutter framework. Please read the instructions and requirements carefully before you begin.
-
-### Evaluation Criteria
-
-We will review your project based on the following key aspects of software development:
-
-- **Architecture and Code Structure:** We will analyze how you structure your code, organize different layers of your application, and manage dependencies.
-- **State Management:** Your approach to handling the state of the application will be evaluated, with a focus on efficiency and maintainability.
-- **API Interaction and Error Handling:** We will assess how you execute API calls, handle asynchronous operations, and manage various response states and potential errors.
-- **Data Serialization/Deserialization:** The methods you use to convert data between JSON and Dart objects will be reviewed.
-- **Dependency Injection:** We will look at your use of dependency injection patterns to build a modular and testable application.
-- **Navigation:** Your solution for handling navigation between different screens will be evaluated for its clarity and robustness.
-- **Code Readability and Documentation:** Your solution must be easy to read, with clear and consistent naming conventions. We will also review whether your code is documented with meaningful comments that explain complex logic, design choices, or non-obvious decisions.
-
-### Technical Requirements
-
-To ensure a consistent evaluation process, please adhere to the following technical requirements:
-
-- **Flutter Version:** Your project must be built with a minimum Flutter version of `3.32.0`.
-- **State Management:** You are required to use the `flutter_bloc` package for state management.
-- **Target Platforms:** The project should be configured to run on both Android and iOS, and the implementation must function normally on both platforms.
-- **API Calls:** You are free to choose your preferred method for handling API calls, whether using a third-party package or the built-in `http` library.
-- **Dependency Injection:** We recommend using the `get_it` package, but you are free to use any dependency injection solution you prefer.
-
-### Bonus Points
-
-The following items are not mandatory but will be considered a significant plus in our evaluation:
-
-- **Image Caching:** Implement a solution for image caching. The application should cache images on the first load and use the cached version upon content refresh, avoiding unnecessary re-downloads.
-- **UI/UX Best Practices:** Demonstrate an organized approach to managing your UI components, including typography, spacing, colors, and border radii. We will inspect how you organize your UI kit.
-
-### The Task
-
-The task consists of building two interconnected screens that perform API calls and display the results.
-
-All design mocks are available on the following Figma page: https://www.figma.com/design/KP2V0sftr9EIUs3VHiczSG/Mobile-Developer-Interview-Test?node-id=0-1&m=dev&t=XUND8zuCg9sn64km-1
-
-All the screens / components should be implemented as close as possible from what it is available on Figma.
-
-#### Screen 1: Autocomplete Search
-
-The primary goal of this screen is to provide a search functionality, where the application suggests a list of places as the user types a search term.
-
-#### Requirements
-
-- **Content:** The screen must have a top header containing a search bar. The main body should display a dynamic list of places returned by the API.
-- **State Handling:** The screen must properly handle and display:
-    - **Empty States:** When no results are returned for a search.
-    - **Error States:** When an API call fails.
-- **Search Logic:**
-    - You will call the API by passing the typed search terms as a query parameter.
-    - **Debouncing:** The API call must be debounced. A new request should only be made 500 milliseconds after the user's last keystroke.
-    - **Cancellation:** Before initiating a new API call, the previous one must be cancelled.
-    - **Loading State:** A loading state should be clearly indicated while the API call is in progress. You can use a loading indicator within the search bar's prefix icon or an alternative visual cue.
-
-#### API Endpoint
-
-The API to be used for this screen is a `GET` request to:
-
-`https://staging-app.resortpass.com/api/search/places/autocomplete?terms={terms}&limit=10&offset=0`
-
-Sample response:
-```json
-[
-    {
-        "id": 236,
-        "name": "Newport Beach, California",
-        "type": "city",
-        "detailed_type": "city",
-        "url": "/hotel-day-passes/Newport-Beach-236",
-        "parent_id": 4,
-        "parent_type": "state",
-        "state_code": "CA",
-        "country_code": "US",
-        "city_name": "Newport Beach",
-        "latitude": 33.6189,
-        "longitude": -117.9298,
-        "distance_search_only": false,
-        "indexName": "staging_locations",
-        "objectID": "Newport Beach, California",
-        "queryID": "6bfbd2b0055720ff3a0a13d6a96775bc"
-    },
-    ...
-]
+```
+Data/         Codable models (LocationData, HotelData, SearchResultsData)
+Networking/   HTTPSession seam + two service protocols + their URLSession impls
+ViewModels/   @Observable view models (SearchViewModel, HotelsSearchViewModel)
+Views/        SwiftUI views, organized by screen
 ```
 
-#### Screen 2: Hotel Listings
+Each view model exposes a single `State` enum (`.loading / .empty / .success(...) / .error`) that the view exhaustively switches over. Mutations are unidirectional: views call methods on the view model; the view model mutates state; SwiftUI re-renders. Views own zero domain state — the only `@State` on each screen is the view model itself.
 
-This screen will display a list of hotels based on the place selected from the autocomplete search results on Screen 1.
+## Key choices & rationale
 
-#### Requirements
+**MVVM with `@Observable` (iOS 17+)** — picked over ObservableObject/`@Published` because the new Observation framework gives finer-grained re-renders and removes the Combine dependency for plain state. Picked over TCA because the app is two screens; the ceremony isn't worth it at this size, but the layering here would map cleanly onto reducers/stores later.
 
-- **Data Source:** The screen will use the latitude and longitude of the selected place to call the next API.
-- **Rendering:** You are required to render the results in a vertical list, following a clean and professional design.
-- **State Handling:** Similar to Screen 1, the screen must properly handle and display:
-    - **Empty States:** When no hotels are available for the given location.
-    - **Error States:** When the API call fails.
-- **Loading State:** A clear loading state should be displayed while the API call is in progress.
+**Swift Concurrency end-to-end, no Combine** — the brief explicitly favors `async/await`. The text-input debounce is implemented with `Task.sleep(for: .milliseconds(500))` inside a cancellable `Task`, not `Combine.debounce`. Each keystroke cancels the prior task (`currentSearchTask?.cancel()`) before spawning a new one, so `Task.checkCancellation()` / `URLError.cancelled` propagation handles both the debounce window *and* the in-flight network request uniformly.
 
-#### API Endpoint and Request Body
+**Networking — `URLSession` + a tiny `HTTPSession` protocol** — no third-party HTTP library; `URLSession` is more than enough for two endpoints. The `HTTPSession` protocol is a one-method seam over `data(for:)` so tests inject a closure-driven fake without needing `URLProtocol` global state (which races under Swift Testing's parallel execution). `URLSession` conforms via extension; the live composition is unchanged.
 
-The API for this screen is a `POST` request to:
+**Dependency injection — manual constructor injection of protocols** — services are protocols (`PlacesSearchService`, `HotelsSearchService`); view models take them via `init`. The app entry point (`mobile_interview_testApp`) is the single composition root. No DI container — the graph is small enough that a container would obscure more than it clarifies. The `hotelsSearchService` is threaded one level through `SearchView` so the `NavigationLink` can construct the next view model; if the graph grew I'd promote that to an environment value.
 
-`https://staging-app.resortpass.com/api/search/algolia_hotels_v7`
+**Pagination on Screen 2** — `HotelsSearchViewModel` keeps two flags alongside `state`: `isLoadingNextPage` and `hasMore`. The next page appends into the existing `.loaded(...)` array rather than replacing it, so rows don't flicker. A page failure sets `hasMore = false` instead of clobbering existing results — UX prefers "we couldn't load more" over "we lost what you were reading."
 
-The body of the request must be a JSON object in the following format:
+**Forward-tolerant decoding** — the autocomplete API returns `type` values beyond the documented `city`/`hotel` (e.g. `alias`). `LocationType` has an explicit `.unknown` case and a custom `init(from:)` that maps any unrecognized raw value to `.unknown`, so a new API enum value can't take the search down.
 
-```json
-{
-    "location":
-    {
-        "latitude": 40.757,
-        "longitude": -73.736
-    },
-    "limit": 30,
-    "offset": 0
-}
-```
+**Navigation — `NavigationView` + `NavigationLink`** — works for two screens. For a real app I'd use `NavigationStack` with a typed path enum so destinations are data, not views, and deep linking is trivial.
 
-Sample response:
-```json
-{
-    "stage": 1,
-    "total": 164,
-    "pages": 6,
-    "page": 0,
-    "hits_per_page": 30,
-    "offset": 0,
-    "limit": 30,
-    "queryID": "61273775fca35824ba5f7be382029afc",
-    "indexName": "staging_hotels_v3",
-    "currency": {
-        "id": 7,
-        "symbol": "$",
-        "name": "United States Dollar",
-        "iso_code": "USD",
-        "created_at": "2022-01-10T10:52:09.456-05:00",
-        "updated_at": "2022-01-10T10:52:09.456-05:00",
-        "active": true
-    },
-    "user_from_usa": true,
-    "hot_spot_hotels": [],
-    "hotels": [
-        {
-            "active": true,
-            "adults_only": false,
-            "allow_booking": "0",
-            "amenities": [
-                {
-                    "description": "Food Service",
-                    "icon_text": "e908",
-                    "name": "food"
-                },
-                ...
-            ],
-            "availability": true,
-            "avg_rating": 0.0,
-            "cancellation_window": 840,
-            "can_be_cancelled": true,
-            "city_id": 123,
-            "city_name": "New York",
-            "city_sort_order": 1,
-            "closed_for_season": false,
-            "code": "NY",
-            "country": "United States of America",
-            "country_code": "US",
-            "created_at": "2023-07-06",
-            "desktop_img": "https://assets-staging.resortpass.dev/uploads/image/picture/35445/TWA_pool7.jpg",
-            "discounted": false,
-            "distance_text": "",
-            "distance_miles": 8.0,
-            "hotel_star": 4,
-            "hotels_count": 31,
-            "id": 1990,
-            "image": [
-                {
-                    "picture": {
-                        "url": "/uploads/image/picture/35445/TWA_pool7.jpg",
-                        "results": {
-                            "url": "https://assets-staging.resortpass.dev/uploads/image/picture/35445/results_TWA_pool7.jpg"
-                        },
-                        "details": {
-                            "url": "https://assets-staging.resortpass.dev/uploads/image/picture/35445/details_TWA_pool7.jpg"
-                        }
-                    }
-                },
-                ...
-            ],
-            "is_usa": true,
-            "latitude": 40.6457482,
-            "longitude": -73.7780172,
-            "name": "TWA Hotel",
-            "objectID": "1990:3227034",
-            "offers": [],
-            "product_categories": [
-                "Pool"
-            ],
-            "product_id": 3227034,
-            "product_images": [],
-            "product_name": "Pool Pass 9pm-10:45pm",
-            "product_type_id": 2,
-            "products": [
-                {
-                    "availability": "available",
-                    "id": 3227029,
-                    "name": "Day Pass",
-                    "price": 50.0,
-                    "product_categories": [
-                        "Pool"
-                    ],
-                    "product_type_id": 2,
-                    "product_type_name": "Day Pass",
-                    "product_type_sort_order": 1,
-                    "quantity": 30,
-                    "show_currency": false
-                }
-            ],
-            "rating": 4.1,
-            "region": [
-                "new-york-city"
-            ],
-            "reopen_date": null,
-            "reviews": 164,
-            "short_desc": "Provide discuss attention. Until however think top reduce fire. Mouth job source feel over town modern.",
-            "sort_order": 10,
-            "state": "New York",
-            "state_code": "NY",
-            "state_id": 38,
-            "timezone": "US/Eastern",
-            "url": "twa-hotel",
-            "vibes": {
-                "primary": "Trendy",
-                "secondary": null
-            },
-            "_geoloc": {
-                "lat": 40.6457482,
-                "lng": -73.7780172
-            }
-        },
-        ...
-    ]
-}
-```
+## Testing
 
-We look forward to reviewing your solution. Good luck!
+Swift Testing (`import Testing`, `@Test`, `#expect`) per the project's CLAUDE.md. The networking layer has unit coverage in `mobile-interview-testTests/`:
+
+- `PlacesSearchServiceTests` — happy path decode, empty array, query-param construction, GET-without-body, HTTP error → `invalidResponse`, malformed JSON → `decodingFailed`, transport error → `transportFailed`, cancellation propagation.
+- `HotelsSearchServiceTests` — happy path decode, POST method + content type, JSON body shape (location/limit/offset round-tripped), error paths, cancellation propagation.
+
+Mocks live in `MockHTTPSession.swift` — a closure-driven `HTTPSession` plus a small `CaptureBox` helper for grabbing the outbound request out of the handler.
+
+## Known limitations & what I'd do differently with more time
+
+- **Image caching** — the brief calls this out as a bonus. Currently relies on `URLSession`'s default `URLCache`, which is small and shared. I'd add Nuke (or `Kingfisher`) for explicit memory + disk caching with proper eviction, or build a thin `ImageLoader` over `URLCache` with a larger budget.
+- **Design system** — typography, spacing, and corner radii are inlined. I'd extract a `DesignTokens` namespace (or a dedicated module) with semantic colors that respect light/dark mode and Dynamic Type.
+- **Accessibility** — basic SwiftUI defaults only. Would add explicit `accessibilityLabel` / `accessibilityHint` on each row, group ratings into a single readable label, and verify Dynamic Type behavior end-to-end.
+- **Error surfacing** — both services collapse decode/transport failures to a single error state in the view model. For a production app I'd preserve the underlying `Error` (or a domain-specific enum) and let the view distinguish retryable vs. non-retryable failures
+- **Generic HTTP client** — at this scale, two service implementations with copy-paste error mapping is fine. At three or more endpoints I'd extract a generic `HTTPClient` with typed `Endpoint` values and have each service describe its endpoint declaratively.
